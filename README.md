@@ -1,3 +1,23 @@
+# Introduction
+
+
+[NDC Melbourne Workshop ](https://ndcmelbourne.com/talk/workshop-event-driven-all-roads-lead-to-kafka/) Event driven : All roads lead to Kafka
+
+### Build a taxi booking application with Apache Kafka. 
+
+During this workshop we’ll discuss what Kafka is and how to use this exciting, modern distributed streaming platform in your next data project. From the ground up we'll build a practical data management system to stream data, aggregate results and deliver live visual mapping of a taxi booking application.
+
+This hands-on labs you’ll build an application that can
+- Publish data to Kafka and subscribe to consume data from Kafka
+- Serialize data in AVRO and Protobuf
+- Register schemas and handle changes with schema evolution
+- Leverage APIs in for producing and consuming messages against Kafka topics
+- Build topologies to transform and aggregate streaming payloads
+- Understand the Kafka connect framework to easily connect to external databases and elastic
+- Build a live mapping dashboard with Kibana
+
+This workshop is ideal for application developers, data engineers, or data scientists who need to interact with distributed messaging and streaming data platforms.
+
 
 # Get started
 
