@@ -200,3 +200,13 @@ services:
     environment:
       xpack.security.enabled: "false"
       discovery.type: "single-node"      
+
+  clientapp:
+    image: 'simonaubury/pythonapp:latest'
+    build:
+      context: docker/
+    container_name: clientapp
+    environment:
+      TZ: ${TZ_SET}
+    volumes:
+      - ./python-app:/python-app

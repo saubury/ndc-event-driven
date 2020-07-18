@@ -308,3 +308,55 @@ curl -s -X GET http://localhost:8083/connectors/sink_elastic/status | jq '.'
 - Open http://localhost:5601/app/kibana#/dashboards
 
 
+# Using Protobuf
+
+## Build a Python producer
+
+# Application Binding - Protobuf classes with Python
+Let us now build an application demonstrating protobuf classes.  
+
+
+```console
+docker-compose exec clientapp bash
+```
+
+## Generate protobuf classes
+To generate protobuf classes you must first install the protobuf compiler `protoc`.  See the [protocol buffer docs](https://developers.google.com/protocol-buffers/docs/pythontutorial) for instructions on installing and using protoc.
+
+### Python compile schema
+
+```console
+cd /python-app
+cat ./meal.proto
+```
+
+```bash
+protoc -I=. --python_out=. ./meal.proto
+```
+
+This will create the `meal_pb2.py` Python class file.  
+
+You can now build protobuf classes and produce into Kafka with code like this
+
+```bash
+pip install -r requirements.txt
+```
+
+```bash
+cat producer-protobuf.py
+python producer-protobuf.py
+```
+
+```console
+docker-compose exec kafka-connect bash
+```
+
+```console
+kafka-protobuf-console-consumer --bootstrap-server kafka:29092 --topic MEAL_DELIVERY --from-beginning --property  schema.registry.url="http://schema-registry:8081"
+```
+
+BTW, this is Protobuf
+
+```console
+curl -s -X GET http://localhost:8081/subjects/MEAL_DELIVERY-value/versions/1
+```
