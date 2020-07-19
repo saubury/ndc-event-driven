@@ -7,8 +7,10 @@ LABEL description="Extending python image adding a few more packages"
 #ENV https_proxy=
 
 RUN apt-get update
-RUN apt-get install vim-tiny -y
+RUN apt-get install -y vim-tiny 
 RUN apt-get install -y protobuf-compiler
+RUN apt-get install -y protobuf-compiler
+RUN apt-get install -y jq
 
 # I know you are not supposed to do this, it's not very docker-like
 ENTRYPOINT ["tail", "-f", "/dev/null"]

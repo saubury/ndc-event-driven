@@ -48,7 +48,7 @@ docker-compose up -d
 ```
 
 
-# Basic Producers and Consumers
+# Workshop 1 – Producers and Consumers
 
 ![Kafka API ](docs/kafka-api.png "Kafka API")
 
@@ -65,6 +65,21 @@ kafka-topics --bootstrap-server kafka:29092 --create --partitions 1 --replicatio
 Check it's there 
 ```console
 kafka-topics --list --bootstrap-server kafka:29092
+```
+
+Create a topic with 8 partitions
+```console
+kafka-topics --bootstrap-server kafka:29092 --create --partitions 8 --replication-factor 1 --topic MYTOPIC8
+```
+
+Describe a topic - check it has 8 partitions
+```console
+kafka-topics --describe --bootstrap-server kafka:29092 --topic MYTOPIC8
+```
+
+Create a topic with replication greater than number of brokers
+```console
+kafka-topics --bootstrap-server kafka:29092 --create --replication-factor 2 --topic MYTOPIC_REPLICATED
 ```
 
 *Create a Producer*
@@ -95,7 +110,7 @@ Each line you type in the first terminal should appear in second terminal
 
 What have we learnt?  It's easy to be a producer or consumer.  Out of the box Kafka doesn't care what you're writing - it's just a bunch of bytes
 
-# Structured Data with AVRO
+## Structured Data with AVRO
 
 
 ![Kafka Schema Registry ](docs/schema-registry.png "Kafka Schema Registry")
@@ -172,7 +187,8 @@ curl -s -X GET http://localhost:8081/subjects/COMPLAINTS_AVRO-value/versions/2 |
 
 ```
 
-# Kafka Connect
+# Workshop 2 – Kafka Connect
+
 Let's copy data from an upstream database which has a list of ride users.  Connecting Kafka to and from other systems (such as a database or object store) is a very common task.  The Kafka Connect framework has a plug in archecture which allows you to _source_ from an upstream system or _sink_ into a downstream system.  
 
 ## Setup Postgres source database
@@ -228,8 +244,9 @@ You _should_ see Jane arrive automatically into the Kafka topic
 
 
 
+# Workshop 3 – Stream Processing
 
-# Generate ride request data
+## Generate ride request data
 Create a stream of rider requests
 
 **Terminal 3**
@@ -244,7 +261,7 @@ Check the AVRO output of the `riderequest` topic. Press ^C when you've seen a fe
 kafka-avro-console-consumer --bootstrap-server kafka:29092 --topic riderequest --from-beginning --property  schema.registry.url="http://schema-registry:8081"
 ```
 
-# Build a stream processor
+## Build a stream processor
 We have a constant steam of rider requests arriving in the `riderequest` topic.  But each request has only a `userid` (such as `J`) and no name (like `Jane`).  Also, the rider location has seperate latitide and longtitude fields; we want to be able to join them together as single string field (to form a geom - `cast(rr.LATITUDE as varchar) || ',' || cast(rr.LONGITUDE as varchar)`)
 
 Let's build a stream processor to consume from the `riderequest` topic and `db-users` topics, join them and produce into a new topic along with a new location attribute.  
@@ -276,7 +293,9 @@ And if you want to check
 kafka-console-consumer --bootstrap-server kafka:29092 --topic RIDESANDUSERSJSON
 ```
 
-# Sink to Elastic/Kibana
+# Workshop 4 – Visualizations
+
+## Sink to Elastic/Kibana
 Setup dynamic elastic templates
 
 **Terminal 2**
@@ -308,11 +327,11 @@ curl -s -X GET http://localhost:8083/connectors/sink_elastic/status | jq '.'
 - Open http://localhost:5601/app/kibana#/dashboards
 
 
-# Using Protobuf
+# Workshop 5 – Producers & Protobuf
 
-## Build a Python producer
+Build a Python producer
 
-# Application Binding - Protobuf classes with Python
+## Application Binding - Protobuf classes with Python
 Let us now build an application demonstrating protobuf classes.  
 
 
@@ -342,10 +361,19 @@ You can now build protobuf classes and produce into Kafka with code like this
 pip install -r requirements.txt
 ```
 
+Review the producer code. Note the `meal_pb2.py` Python class file is included. This class is used to construct a payload in protobuf. The produecr will send the schema to the schema registry and the payload to the `MEAL_DELIVERY` topic.
+
 ```bash
 cat producer-protobuf.py
+```
+
+Run the producer
+```bash
 python producer-protobuf.py
 ```
+
+### Review the topic
+Now to check the contents of the `MEAL_DELIVERY` topic. We will use the `kafka-protobuf-console-consumer` command line consumer tool to inspect the protobuf payload.
 
 ```console
 docker-compose exec kafka-connect bash
@@ -355,7 +383,8 @@ docker-compose exec kafka-connect bash
 kafka-protobuf-console-consumer --bootstrap-server kafka:29092 --topic MEAL_DELIVERY --from-beginning --property  schema.registry.url="http://schema-registry:8081"
 ```
 
-BTW, this is Protobuf
+## Verify schema 
+Check this is Protobuf
 
 ```console
 curl -s -X GET http://localhost:8081/subjects/MEAL_DELIVERY-value/versions/1
