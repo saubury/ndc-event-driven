@@ -110,6 +110,8 @@ Each line you type in the first terminal should appear in second terminal
 
 What have we learnt?  It's easy to be a producer or consumer.  Out of the box Kafka doesn't care what you're writing - it's just a bunch of bytes
 
+# Workshop 2 – Structured Data 
+
 ## Structured Data with AVRO
 
 
@@ -187,7 +189,7 @@ curl -s -X GET http://localhost:8081/subjects/COMPLAINTS_AVRO-value/versions/2 |
 
 ```
 
-# Workshop 2 – Kafka Connect
+# Workshop 3 – Kafka Connect
 
 Let's copy data from an upstream database which has a list of ride users.  Connecting Kafka to and from other systems (such as a database or object store) is a very common task.  The Kafka Connect framework has a plug in archecture which allows you to _source_ from an upstream system or _sink_ into a downstream system.  
 
@@ -244,7 +246,7 @@ You _should_ see Jane arrive automatically into the Kafka topic
 
 
 
-# Workshop 3 – Stream Processing
+# Workshop 4 – Stream Processing
 
 ## Generate ride request data
 Create a stream of rider requests
@@ -293,7 +295,7 @@ And if you want to check
 kafka-console-consumer --bootstrap-server kafka:29092 --topic RIDESANDUSERSJSON
 ```
 
-# Workshop 4 – Visualizations
+# Workshop 5 – Visualizations
 
 ## Sink to Elastic/Kibana
 Setup dynamic elastic templates
@@ -327,7 +329,7 @@ curl -s -X GET http://localhost:8083/connectors/sink_elastic/status | jq '.'
 - Open http://localhost:5601/app/kibana#/dashboards
 
 
-# Workshop 5 – Producers & Protobuf
+# Workshop 6 – Producers & Protobuf
 
 Build a Python producer
 
