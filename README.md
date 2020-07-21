@@ -28,11 +28,21 @@ This workshop is ideal for application developers, data engineers, or data scien
 - clone this repo!
 
 ```console
+# Mac
 mkdir ~/git
 cd ~/git
 git clone https://github.com/saubury/ndc-event-driven.git
 cd ndc-event-driven
 ```
+
+```console
+# Windows
+mkdir c:\git
+cd c:\git
+git clone https://github.com/saubury/ndc-event-driven.git
+cd ndc-event-driven
+```
+
 
 ## How you'll work
 You'll need _three_ terminals for these exercises. Each one you should `cd ~/git/ndc-event-driven`
@@ -64,7 +74,7 @@ kafka-topics --bootstrap-server kafka:29092 --create --partitions 1 --replicatio
 
 Check it's there 
 ```console
-kafka-topics --list --bootstrap-server kafka:29092
+kafka-topics --list --bootstrap-server kafka:29092 --topic MYTOPIC
 ```
 
 Create a topic with 8 partitions
@@ -77,7 +87,7 @@ Describe a topic - check it has 8 partitions
 kafka-topics --describe --bootstrap-server kafka:29092 --topic MYTOPIC8
 ```
 
-Create a topic with replication greater than number of brokers
+Create a topic with replication greater than number of brokers (it should error!)
 ```console
 kafka-topics --bootstrap-server kafka:29092 --create --replication-factor 2 --topic MYTOPIC_REPLICATED
 ```
@@ -147,9 +157,10 @@ kafka-avro-console-producer  --broker-list kafka:29092 --property schema.registr
   "type": "record",
   "name": "myrecord",
   "fields": [
-      {"name": "customer_name,  "type": "string" }
+      {"name": "customer_name",  "type": "string" }
     , {"name": "complaint_type", "type": "string" }
     , {"name": "trip_cost", "type": "float" }
+    , {"name": "new_customer", "type": "boolean"}
   ]
 }' << EOF
 {"customer_name":"Carol", "complaint_type":"Late arrival", "trip_cost": 19.60, "new_customer": false}
@@ -228,9 +239,19 @@ Let's copy data from an upstream database which has a list of ride users.  Conne
 
 Exit the kafka-connect container by pressing Ctrl+D.
 
+Have a look at `postgres-setup.sql`
+
 ```console
+# Mac
 cat scripts/postgres-setup.sql
 
+# Windows
+type scripts\postgres-setup.sql
+```
+
+
+
+```console
 docker-compose exec postgres psql -U postgres -f /scripts/postgres-setup.sql
 ```
 
@@ -277,6 +298,10 @@ curl -s -X GET http://kafka-connect:8083/connectors/src_pg/status | jq '.'
 Now let's consume the topic by starting a consumer inside the kafka-connect container to 
 
 ```console
+docker-compose exec kafka-connect bash
+```
+
+```console
 kafka-avro-console-consumer --bootstrap-server kafka:29092 --topic db-users --from-beginning --property  schema.registry.url="http://schema-registry:8081"
 ```
 
@@ -318,6 +343,16 @@ Will build our stream processor in ksql.
 Build a stream processor 
 
 **Terminal 2**
+
+Have a look at type `scripts/join_topics.ksql`
+
+```console
+# Mac
+cat scripts/join_topics.ksql
+
+# Windows
+type scripts\join_topics.ksql
+```
 
 ```console
 docker-compose exec ksqldb-cli ksql http://ksqldb-server:8088
