@@ -104,9 +104,26 @@ docker-compose exec kafka-connect bash
 
 In the newly created (second) terminal let's start reading from new Kafka topic
 ```console
+kafka-console-consumer --bootstrap-server kafka:29092 --topic MYTOPIC 
+```
+Each line you type in the first terminal should appear in second terminal. Note we're only getting the "new" messages
+
+**Terminal 3**
+
+*Create a Consumer*
+
+Start yet another terminal
+```console
+docker-compose exec kafka-connect bash
+```
+
+In the newly created (third) terminal let's start reading from new Kafka topic
+```console
 kafka-console-consumer --bootstrap-server kafka:29092 --topic MYTOPIC --from-beginning
 ```
-Each line you type in the first terminal should appear in second terminal
+Each line you type in the first terminal should appear in third terminal. Note we're only getting the "old" *and* "new" messages
+
+
 
 What have we learnt?  It's easy to be a producer or consumer.  Out of the box Kafka doesn't care what you're writing - it's just a bunch of bytes
 
@@ -130,10 +147,9 @@ kafka-avro-console-producer  --broker-list kafka:29092 --property schema.registr
   "type": "record",
   "name": "myrecord",
   "fields": [
-      {"name": "customer_name",  "type": "string" }
+      {"name": "customer_name,  "type": "string" }
     , {"name": "complaint_type", "type": "string" }
     , {"name": "trip_cost", "type": "float" }
-    , {"name": "new_customer", "type": "boolean"}
   ]
 }' << EOF
 {"customer_name":"Carol", "complaint_type":"Late arrival", "trip_cost": 19.60, "new_customer": false}
@@ -144,11 +160,24 @@ EOF
 
 Press Ctrl+C and Ctrl+D and run the following curl command.
 
+Start yet another terminal
+```console
+docker-compose exec clientapp bash
+```
+
 BTW, this is AVRO
 
 ```console
-curl -s -X GET http://localhost:8081/subjects/COMPLAINTS_AVRO-value/versions/1
+curl -s -X GET http://schema-registry:8081/subjects/COMPLAINTS_AVRO-value/versions/1
 ```
+
+We can use `jq` to make this easier to read
+```bash
+apt-get install -y jq
+
+curl -s -X GET http://schema-registry:8081/subjects/COMPLAINTS_AVRO-value/versions/1 | jq '.schema | fromjson'
+```
+
 
 ## AVRO Schema Evolution
 Let's add a loyality concept to our complaints topic - we'll add "number_of_rides" to the payload
@@ -177,15 +206,15 @@ EOF
 
 Let's see what schemas we have registered now
 ```console
-curl -s -X GET http://localhost:8081/subjects/COMPLAINTS_AVRO-value/versions
+curl -s -X GET http://schema-registry:8081/subjects/COMPLAINTS_AVRO-value/versions
 
-curl -s -X GET http://localhost:8081/subjects/COMPLAINTS_AVRO-value/versions/1 | jq '.'
+curl -s -X GET http://schema-registry:8081/subjects/COMPLAINTS_AVRO-value/versions/1 | jq '.'
 
-curl -s -X GET http://localhost:8081/subjects/COMPLAINTS_AVRO-value/versions/2 | jq '.'
+curl -s -X GET http://schema-registry:8081/subjects/COMPLAINTS_AVRO-value/versions/2 | jq '.'
 
 or you can also use:
 
-curl -s -X GET http://localhost:8081/subjects/COMPLAINTS_AVRO-value/versions/2 | jq -r .schema | jq .
+curl -s -X GET http://schema-registry:8081/subjects/COMPLAINTS_AVRO-value/versions/2 | jq -r .schema | jq .
 
 ```
 
@@ -219,13 +248,28 @@ Our goal now is to source data continuously from our Postgres database and produ
 
 Have a look at `scripts/connect_source_postgres.json`
 
-Load connect config
 ```console
-curl -k -s -S -X PUT -H "Accept: application/json" -H "Content-Type: application/json" --data @./scripts/connect_source_postgres.json http://localhost:8083/connectors/src_pg/config
+# Mac
+cat scripts/connect_source_postgres.json
+
+# Windows
+type scripts\connect_source_postgres.json
+```
+
+
+
+Load connect config
+
+```bash
+docker-compose exec clientapp bash
+ ```
+
+```console
+curl -k -s -S -X PUT -H "Accept: application/json" -H "Content-Type: application/json" --data @./scripts/connect_source_postgres.json http://kafka-connect:8083/connectors/src_pg/config
 ```
 
 ```
-curl -s -X GET http://localhost:8083/connectors/src_pg/status | jq '.'
+curl -s -X GET http://kafka-connect:8083/connectors/src_pg/status | jq '.'
 ```
 
 **Terminal 2**

@@ -210,3 +210,4 @@ services:
       TZ: ${TZ_SET}
     volumes:
       - ./python-app:/python-app
+      - ./scripts:/scripts
