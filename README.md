@@ -322,7 +322,7 @@ Create a stream of rider requests
 
 **Terminal 3**
 ```console
-docker-compose exec ksqldb-datagen ksql-datagen schema=/scripts/riderequest.avro  format=avro topic=riderequest key=rideid msgRate=1 iterations=10 bootstrap-server=kafka:29092 schemaRegistryUrl=http://schema-registry:8081 value-format=avro
+docker-compose exec ksqldb-datagen ksql-datagen schema=/scripts/riderequest.avro  format=avro topic=riderequest key=rideid msgRate=1 iterations=1000 bootstrap-server=kafka:29092 schemaRegistryUrl=http://schema-registry:8081 value-format=avro
 ```
 
 In Terminal 2, (Exit the existing consumer by pressing Ctrl+C) 
@@ -369,7 +369,15 @@ exit;
 
 And if you want to check
 
-**Terminal 1** from inside the Kafka-connect container
+**Terminal 1** 
+
+From inside the Kafka-connect container
+
+```console
+docker-compose exec kafka-connect bash
+```
+
+
 ```console
 kafka-console-consumer --bootstrap-server kafka:29092 --topic RIDESANDUSERSJSON
 ```
@@ -383,26 +391,33 @@ Setup dynamic elastic templates
 
 At the console prompt
 
-```console
-./scripts/load_elastic_dynamic_template
+```bash
+docker-compose exec clientapp /scripts/load_elastic_dynamic_template
 ```
+
 
 Now we need a sink connector to read from the topic RIDESANDUSERSJSON
 
 Load connect config.
-```console
-curl -k -s -S -X PUT -H "Accept: application/json" -H "Content-Type: application/json" --data @./scripts/connect_sink_elastic.json http://localhost:8083/connectors/sink_elastic/config
+
+```bash
+docker-compose exec clientapp bash
 ```
 
 ```console
-curl -s -X GET http://localhost:8083/connectors/sink_elastic/status | jq '.'
+curl -k -s -S -X PUT -H "Accept: application/json" -H "Content-Type: application/json" --data @./scripts/connect_sink_elastic.json http://kafka-connect:8083/connectors/sink_elastic/config
+```
+
+```console
+curl -s -X GET http://kafka-connect:8083/connectors/sink_elastic/status | jq '.'
 ```
 
 ## Kibana Dashboard Import
 
 - Navigate to http://localhost:5601/app/kibana#/management/kibana/objects
 - Click Import
-- Select file 06_kibana_export.json
+- Navigate to where you've put your project / scripts
+- Select file `kibana_export.json`
 - Click Automatically overwrite all saved objects? and select Yes, overwrite all objects
 - Kibana - Open Dashboard
 - Open http://localhost:5601/app/kibana#/dashboards
@@ -436,6 +451,10 @@ protoc -I=. --python_out=. ./meal.proto
 
 This will create the `meal_pb2.py` Python class file.  
 
+```bash
+head meal_pb2.py
+```
+
 You can now build protobuf classes and produce into Kafka with code like this
 
 ```bash
@@ -463,6 +482,9 @@ docker-compose exec kafka-connect bash
 ```console
 kafka-protobuf-console-consumer --bootstrap-server kafka:29092 --topic MEAL_DELIVERY --from-beginning --property  schema.registry.url="http://schema-registry:8081"
 ```
+
+### Challenge
+ Can you update `producer-protobuf.py` to create a meal order for a different food and drink?  The `vi` editor is installed in the _clientapp_ container
 
 ## Verify schema 
 Check this is Protobuf
