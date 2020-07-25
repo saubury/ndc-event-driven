@@ -137,6 +137,9 @@ Each line you type in the first terminal should appear in third terminal. Note w
 
 What have we learnt?  It's easy to be a producer or consumer.  Out of the box Kafka doesn't care what you're writing - it's just a bunch of bytes
 
+### End of workshop
+Press Ctrl+C and Ctrl+D to exit back to your Windows or Mac command prompt.
+
 # Workshop 2 – Structured Data 
 
 ## Structured Data with AVRO
@@ -145,12 +148,18 @@ What have we learnt?  It's easy to be a producer or consumer.  Out of the box Ka
 ![Kafka Schema Registry ](docs/schema-registry.png "Kafka Schema Registry")
 
 
+
 **Terminal 1**
+```console
+docker-compose exec kafka-connect bash
+```
 
 At UNIX prompt, (Note: Press Ctrl C to exit the producer script)
 ```console
 kafka-topics --bootstrap-server kafka:29092 --create --partitions 1 --replication-factor 1 --topic COMPLAINTS_AVRO
+```
 
+```console
 kafka-avro-console-producer  --broker-list kafka:29092 --property schema.registry.url="http://schema-registry:8081"  --topic COMPLAINTS_AVRO \
 --property value.schema='
 {
@@ -164,17 +173,26 @@ kafka-avro-console-producer  --broker-list kafka:29092 --property schema.registr
   ]
 }' << EOF
 {"customer_name":"Carol", "complaint_type":"Late arrival", "trip_cost": 19.60, "new_customer": false}
+{"customer_name":"Bob", "complaint_type":"Smelly", "trip_cost": 28.40, "new_customer": false}
+{"customer_name":"Jane", "complaint_type":"Late arrival", "trip_cost": 7.60, "new_customer": false}
 EOF
 ```
+Check the AVRO data you just wrote
+
+```console
+kafka-avro-console-consumer --bootstrap-server kafka:29092 --topic COMPLAINTS_AVRO --from-beginning --property  schema.registry.url="http://schema-registry:8081"
+```
+
+
 
 **Terminal 2**
 
-Press Ctrl+C and Ctrl+D and run the following curl command.
 
 Start yet another terminal
 ```console
 docker-compose exec clientapp bash
 ```
+
 
 BTW, this is AVRO
 
@@ -184,8 +202,6 @@ curl -s -X GET http://schema-registry:8081/subjects/COMPLAINTS_AVRO-value/versio
 
 We can use `jq` to make this easier to read
 ```bash
-apt-get install -y jq
-
 curl -s -X GET http://schema-registry:8081/subjects/COMPLAINTS_AVRO-value/versions/1 | jq '.schema | fromjson'
 ```
 
@@ -213,6 +229,12 @@ kafka-avro-console-producer  --broker-list kafka:29092 --property schema.registr
 EOF
 ```
 
+Check the AVRO data you just wrote
+
+```console
+kafka-avro-console-consumer --bootstrap-server kafka:29092 --topic COMPLAINTS_AVRO --from-beginning --property  schema.registry.url="http://schema-registry:8081"
+```
+
 **Terminal 2**
 
 Let's see what schemas we have registered now
@@ -226,18 +248,19 @@ curl -s -X GET http://schema-registry:8081/subjects/COMPLAINTS_AVRO-value/versio
 or you can also use:
 
 curl -s -X GET http://schema-registry:8081/subjects/COMPLAINTS_AVRO-value/versions/2 | jq -r .schema | jq .
-
 ```
+
+### End of workshop
+Press Ctrl+C and Ctrl+D to exit back to your Windows or Mac command prompt.
+
 
 # Workshop 3 – Kafka Connect
 
-Let's copy data from an upstream database which has a list of ride users.  Connecting Kafka to and from other systems (such as a database or object store) is a very common task.  The Kafka Connect framework has a plug in archecture which allows you to _source_ from an upstream system or _sink_ into a downstream system.  
+Let's copy data from an upstream database which has a list of ride users.  Connecting Kafka to and from other systems (such as a database or object store) is a very common task.  The Kafka Connect framework has a plug in architecture which allows you to _source_ from an upstream system or _sink_ into a downstream system.  
 
 ## Setup Postgres source database
 
 **in Terminal 1:** 
-
-Exit the kafka-connect container by pressing Ctrl+D.
 
 Have a look at `postgres-setup.sql`
 
@@ -314,6 +337,8 @@ docker exec -it postgres psql -U postgres -c "INSERT INTO users (userid, usernam
 You _should_ see Jane arrive automatically into the Kafka topic
 
 
+### End of workshop
+Press Ctrl+C and Ctrl+D to exit back to your Windows or Mac command prompt.
 
 # Workshop 4 – Stream Processing
 
@@ -322,18 +347,24 @@ Create a stream of rider requests
 
 **Terminal 3**
 ```console
-docker-compose exec ksqldb-datagen ksql-datagen schema=/scripts/riderequest.avro  format=avro topic=riderequest key=rideid msgRate=1 iterations=1000 bootstrap-server=kafka:29092 schemaRegistryUrl=http://schema-registry:8081 value-format=avro
+docker-compose exec ksqldb-datagen ksql-datagen schema=/scripts/riderequest.avro  format=avro topic=riderequest key=rideid msgRate=1 iterations=10000 bootstrap-server=kafka:29092 schemaRegistryUrl=http://schema-registry:8081 value-format=avro
 ```
 
-In Terminal 2, (Exit the existing consumer by pressing Ctrl+C) 
+In Terminal 2
+
 Check the AVRO output of the `riderequest` topic. Press ^C when you've seen a few records.
+
+```console
+docker-compose exec kafka-connect bash
+```
+
 
 ```console
 kafka-avro-console-consumer --bootstrap-server kafka:29092 --topic riderequest --from-beginning --property  schema.registry.url="http://schema-registry:8081"
 ```
 
 ## Build a stream processor
-We have a constant steam of rider requests arriving in the `riderequest` topic.  But each request has only a `userid` (such as `J`) and no name (like `Jane`).  Also, the rider location has seperate latitide and longtitude fields; we want to be able to join them together as single string field (to form a geom - `cast(rr.LATITUDE as varchar) || ',' || cast(rr.LONGITUDE as varchar)`)
+We have a constant steam of rider requests arriving in the `riderequest` topic.  But each request has only a `userid` (such as `J`) and no name (like `Jane`).  Also, the rider location has separate latitude and longitude fields; we want to be able to join them together as single string field (to form a geom - `cast(rr.LATITUDE as varchar) || ',' || cast(rr.LONGITUDE as varchar)`)
 
 Let's build a stream processor to consume from the `riderequest` topic and `db-users` topics, join them and produce into a new topic along with a new location attribute.  
 
@@ -361,10 +392,8 @@ docker-compose exec ksqldb-cli ksql http://ksqldb-server:8088
 Run the KSQL script: 
 
 ```console
-ksql
-ksql> run script '/scripts/join_topics.ksql';
+run script '/scripts/join_topics.ksql';
 exit;
-
 ```
 
 And if you want to check
@@ -381,6 +410,9 @@ docker-compose exec kafka-connect bash
 ```console
 kafka-console-consumer --bootstrap-server kafka:29092 --topic RIDESANDUSERSJSON
 ```
+
+### End of workshop
+Press Ctrl+C and Ctrl+D to exit back to your Windows or Mac command prompt.
 
 # Workshop 5 – Visualizations
 
@@ -422,6 +454,8 @@ curl -s -X GET http://kafka-connect:8083/connectors/sink_elastic/status | jq '.'
 - Kibana - Open Dashboard
 - Open http://localhost:5601/app/kibana#/dashboards
 
+### End of workshop
+Press Ctrl+C and Ctrl+D to exit back to your Windows or Mac command prompt.
 
 # Workshop 6 – Producers & Protobuf
 
@@ -490,5 +524,9 @@ kafka-protobuf-console-consumer --bootstrap-server kafka:29092 --topic MEAL_DELI
 Check this is Protobuf
 
 ```console
-curl -s -X GET http://localhost:8081/subjects/MEAL_DELIVERY-value/versions/1
+docker-compose exec clientapp bash
+```
+
+```console
+curl -s -X GET http://schema-registry:8081/subjects/MEAL_DELIVERY-value/versions/1
 ```
